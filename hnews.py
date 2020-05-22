@@ -1,33 +1,39 @@
 import requests
 from bs4 import BeautifulSoup
 import telegram
-from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, InlineQueryHandler)
-from telegram import InlineQueryResultArticle, InputTextMessageContent
 import schedule
 from threading import Thread
 from time import sleep
+from datetime import date
 
-response = requests.get('https://news.ycombinator.com/news')
-soup = BeautifulSoup(response.text, 'html.parser')
+file = requests.get('https://news.ycombinator.com/').text
+soup = BeautifulSoup(file, 'html.parser')
 links = soup.select('.storylink')
+athing = soup.select('.athing')
 
-
-def create_custom_hn(links):
-	hn = []
-	for idx, item in enumerate(links):
-		title = links[idx].getText()
-		href = links[idx].get('href', None)
-		while len(hn) != 25:
-			hn.append({'title': title, 'link': href})
+def create_custom_hnews(links, athing):
+	hnews = []
+	string =[]
+	for idx, val in enumerate(links):
+		title_text = links[idx].getText()
+		href_url = links[idx].get('href', None)
+		rnk = athing[idx].select('.rank')
+		r = int(rnk[0].getText().replace('.', ''))
+		hnews.append({'rank': r, 'title': title_text, 'url': href_url})
+	for idx, i in enumerate(range(len(hnews))):
+		title = hnews[i]['title']
+		link = hnews[i]['url']
+		rank = hnews[i]['rank']
+		string.append(f'\n {rank}. {title},\n{link}\n')
+		if idx == 25:
 			break
-	return hn
+	return ''.join(string)
 
 
 # telegram bot configuration
 
 my_token = 'your token'
-msg = create_custom_hn(links)
-chat_id_me = 'telegram chat id
+msg = create_custom_hn(links, athing)
 chat_id = 'telegram chat id'
 
 
@@ -71,25 +77,12 @@ def send(msg, chat_id, token=my_token):
 	bot = telegram.Bot(token=token)
 	return bot.sendMessage(chat_id=chat_id, text=msg)
 
+today = date.today()
+send(f'Top news for {today.strftime("%a, %d %B, %Y")} \n'+msg, chat_id_me, my_token)
 
-def inout_message(msg):
-	string= []
-	for i in range(len(msg)):
-		tit = msg[i]['title']
-		lin = msg[i]['link']
-		string.append(f'\n ~ {tit}, {lin}\n')
-	return ''.join(string)
+def calling():
+	return send(f'Top news for {today.strftime("%a, %d %B, %Y")} \n'+msg, chat_id_me, my_token)
 
-
-send(inout_message(msg), chat_id_me, my_token)
-
-
-def calling_me():
-	return send(inout_message(msg), chat_id_me, my_token)
-
-
-def calling_friend():
-	return send(inout_message(msg), chat_id, my_token)
 
 
 def schedule_checker():
@@ -100,10 +93,8 @@ def schedule_checker():
 
 if __name__ == "__main__":
 	# Create the job in schedule.
-	# schedule.every().minute.do(calling_me)
-	# schedule.every().minute.do(calling_friend)
-	schedule.every().day.at("15:00").do(calling_me)
-	schedule.every().day.at("17:00").do(calling_friend)
+	# schedule.every().hour.do(calling)
+	schedule.every().day.at("10:00").do(calling)
 	#
 	# Spin up a thread to run the schedule check so it doesn't block your bot.
 	# This will take the function schedule_checker which will check every second
