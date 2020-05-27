@@ -5,13 +5,13 @@ import schedule
 from threading import Thread
 from time import sleep
 from datetime import date
+import datetime
 
-file = requests.get('https://news.ycombinator.com/').text
-soup = BeautifulSoup(file, 'html.parser')
-links = soup.select('.storylink')
-athing = soup.select('.athing')
-
-def create_custom_hnews(links, athing):
+def create_custom_hnews():
+	file = requests.get('https://news.ycombinator.com/').text
+	soup = BeautifulSoup(file, 'html.parser')
+	links = soup.select('.storylink')
+	athing = soup.select('.athing')
 	hnews = []
 	string =[]
 	for idx, val in enumerate(links):
@@ -33,7 +33,7 @@ def create_custom_hnews(links, athing):
 # telegram bot configuration
 
 my_token = 'your token'
-msg = create_custom_hn(links, athing)
+msg = create_custom_hn()
 chat_id = 'telegram chat id'
 
 
@@ -76,12 +76,14 @@ def send(msg, chat_id, token=my_token):
 	"""
 	bot = telegram.Bot(token=token)
 	return bot.sendMessage(chat_id=chat_id, text=msg)
-
-today = date.today()
-send(f'Top news for {today.strftime("%a, %d %B, %Y")} \n'+msg, chat_id_me, my_token)
+def date_string():
+	today = date.today()
+	date_string = today.strftime("%a, %d %B, %Y")
+	return date_string
+send(f'Top news for {date_string()} \n'+msg, chat_id_me, my_token)
 
 def calling():
-	return send(f'Top news for {today.strftime("%a, %d %B, %Y")} \n'+msg, chat_id_me, my_token)
+	return send(f'Top news for {date_string()} \n'+msg, chat_id_me, my_token)
 
 
 
